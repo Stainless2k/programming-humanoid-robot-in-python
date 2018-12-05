@@ -18,9 +18,12 @@
 # add PYTHONPATH
 import os
 import sys
+import numpy as np
+import math
 sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'joint_control'))
 
 from numpy.matlib import matrix, identity
+
 
 from angle_interpolation import AngleInterpolationAgent
 
@@ -35,9 +38,38 @@ class ForwardKinematicsAgent(AngleInterpolationAgent):
         self.transforms = {n: identity(4) for n in self.joint_names}
 
         # chains defines the name of chain and joints of the chain
-        self.chains = {'Head': ['HeadYaw', 'HeadPitch']
-                       # YOUR CODE HERE
+        self.chains = {'Head': ['HeadYaw', 'HeadPitch'],
+                       'LArm': ['LShoulderPitch', 'LShoulderRoll', 'LElbowYaw', 'LElbowRoll'],
+                       'LLeg': ['LHipYawPitch', 'LHipRoll', 'LHipPitch', 'LKneePitch', 'LAnklePitch', 'LAnkleRoll'],
+                       'RLeg': ['RHipYawPitch', 'RHipRoll', 'RHipPitch', 'RKneePitch', 'RAnklePitch', 'RAnkleRoll'],
+                       'RArm': ['RShoulderPitch', 'RShoulderRoll', 'RElbowYaw', 'RElbowRoll'],
                        }
+
+        self.offsets = { 'HeadYaw': [0, 0, 126.5],
+			             'HeadPitch': [0, 0, 0],
+			             'LShoulderPitch': [0, 98, 100],
+                         'LShoulderRoll': [0, 0, 0],
+                         'LElbowYaw': [105, 15, 0],
+                         'LElbowRoll': [0, 0, 0],
+                         'LWristYaw': [55.95, 0, 0],
+                         'LHipRoll': [0, 0, 0],
+                         'LHipPitch': [0, 0, 0],
+                         'LKneePitch': [0, 0, -100],
+                         'LAnkleRoll': [0, 0, 0],
+                         'LAnklePitch': [0, 0, -102.9],
+                         'LHipYawPitch': [0, 50, -85],
+                         'RShoulderPitch': [0, -98, 100],
+                         'RShoulderRoll': [0, 0, 0],
+                         'RElbowYaw': [105, -15, 0],
+                         'RElbowRoll': [0, 0, 0],
+                         'RWristYaw': [55.95, 0, 0],
+                         'RHipYawPitch': [0, -50, -85],
+                         'RHipRoll': [0, 0, 0],
+                         'RHipPitch': [0, 0, 0],
+                         'RKneePitch': [0, 0, -100],
+                         'RAnkleRoll': [0, 0, 0],
+                         'RAnklePitch': [0, 0, -102.9]
+                         }
 
     def think(self, perception):
         self.forward_kinematics(perception.joint)
@@ -54,6 +86,32 @@ class ForwardKinematicsAgent(AngleInterpolationAgent):
         T = identity(4)
         # YOUR CODE HERE
 
+        if 'Roll' in joint_name:
+            #x case
+            T =     [
+                        [1, 0, 0, 0],
+                        [0, math.cos(joint_angle), -1 * math.sin(joint_angle), 0],
+                        [0, math.sin(joint_angle), math.cos(joint_angle), 0],
+                        [self.offsets[joint_name][0], self.offsets[joint_name][1], self.offsets[joint_name][2], 1]
+                    ]
+        elif 'Pitch' in joint_name:
+            #y case
+            T =     [
+                        [math.cos(joint_angle), 0, math.sin(joint_angle), 0],
+                        [0, 1, 0, 0],
+                        [-1 * math.sin(joint_angle), 0, math.cos(joint_angle), 0],
+                        [self.offsets[joint_name][0], self.offsets[joint_name][1], self.offsets[joint_name][2], 1]
+                    ]
+        elif 'Yaw' in joint_name:
+            #z case
+            T =     [
+                        [math.cos(joint_angle), -1 * math.sin(joint_angle), 0, 0],
+                        [math.sin(joint_angle), math.cos(joint_angle), 0, 0],
+                        [0, 0, 1, 0],
+                        [self.offsets[joint_name][0], self.offsets[joint_name][1], self.offsets[joint_name][2], 1]
+                    ]
+
+
         return T
 
     def forward_kinematics(self, joints):
@@ -67,6 +125,7 @@ class ForwardKinematicsAgent(AngleInterpolationAgent):
                 angle = joints[joint]
                 Tl = self.local_trans(joint, angle)
                 # YOUR CODE HERE
+                T = T * Tl
 
                 self.transforms[joint] = T
 
