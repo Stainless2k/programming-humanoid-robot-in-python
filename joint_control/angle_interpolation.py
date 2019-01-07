@@ -24,6 +24,7 @@ from pid import PIDAgent
 from keyframes import *
 
 
+
 class AngleInterpolationAgent(PIDAgent):
     def __init__(self, simspark_ip='localhost',
                  simspark_port=3100,
@@ -33,6 +34,7 @@ class AngleInterpolationAgent(PIDAgent):
         super(AngleInterpolationAgent, self).__init__(simspark_ip, simspark_port, teamname, player_id, sync_mode)
         self.keyframes = ([], [], [])
         self.sTime = -1
+        print "test init angleiter"
 
     def think(self, perception):
         target_joints = self.angle_interpolation(self.keyframes, perception)
@@ -87,7 +89,7 @@ class AngleInterpolationAgent(PIDAgent):
                 else:
                     #print('no frame')
                     continue
-                    
+
                 #biezier formular from wikipedia
                 #p0 first point: angle from keyframe
                 #p1 second bezier handle from first point: p0 + offset (offset=dAngle*dTime of said handle)

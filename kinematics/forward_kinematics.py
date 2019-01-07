@@ -22,13 +22,12 @@ import numpy as np
 import math
 sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'joint_control'))
 
-from numpy.matlib import matrix, identity
+from numpy.matlib import matrix, identity, dot
 
 
-from angle_interpolation import AngleInterpolationAgent
-
-
-class ForwardKinematicsAgent(AngleInterpolationAgent):
+from recognize_posture import PostureRecognitionAgent
+#having to use posture rec agent, so the rpc server agent can use self.posture
+class ForwardKinematicsAgent(PostureRecognitionAgent):
     def __init__(self, simspark_ip='localhost',
                  simspark_port=3100,
                  teamname='DAInamite',
@@ -88,28 +87,28 @@ class ForwardKinematicsAgent(AngleInterpolationAgent):
 
         if 'Roll' in joint_name:
             #x case
-            T =     [
+            T =     matrix([
                         [1, 0, 0, 0],
                         [0, math.cos(joint_angle), -1 * math.sin(joint_angle), 0],
                         [0, math.sin(joint_angle), math.cos(joint_angle), 0],
                         [self.offsets[joint_name][0], self.offsets[joint_name][1], self.offsets[joint_name][2], 1]
-                    ]
+                    ])
         elif 'Pitch' in joint_name:
             #y case
-            T =     [
+            T =     matrix([
                         [math.cos(joint_angle), 0, math.sin(joint_angle), 0],
                         [0, 1, 0, 0],
                         [-1 * math.sin(joint_angle), 0, math.cos(joint_angle), 0],
                         [self.offsets[joint_name][0], self.offsets[joint_name][1], self.offsets[joint_name][2], 1]
-                    ]
+                    ])
         elif 'Yaw' in joint_name:
             #z case
-            T =     [
+            T =     matrix([
                         [math.cos(joint_angle), -1 * math.sin(joint_angle), 0, 0],
                         [math.sin(joint_angle), math.cos(joint_angle), 0, 0],
                         [0, 0, 1, 0],
                         [self.offsets[joint_name][0], self.offsets[joint_name][1], self.offsets[joint_name][2], 1]
-                    ]
+                    ])
 
 
         return T
@@ -125,7 +124,7 @@ class ForwardKinematicsAgent(AngleInterpolationAgent):
                 angle = joints[joint]
                 Tl = self.local_trans(joint, angle)
                 # YOUR CODE HERE
-                T = T * Tl
+                T = dot(T, Tl)
 
                 self.transforms[joint] = T
 
